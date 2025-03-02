@@ -25,6 +25,8 @@ const RGB_COLOR_GREEN = 'rgb(0, 197, 65)';
 const TYPE_MOVIE_ROUNDED_PLUS = 'movie-rounded-plus';
 const REDIRECT_TIME = 3000;
 const COOL_TIME = 5000;
+
+// Button styles
 const BUTTON_STYLE = `
   position: fixed;
   z-index: 99999;
@@ -37,6 +39,20 @@ const BUTTON_STYLE = `
   display: flex;
   justify-content: space-between;
   align-items: center;
+`;
+
+const COPY_BUTTON_STYLE = `
+  position: fixed;
+  z-index: 99999;
+  padding: 10px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  right: 40px;
+  bottom: 170px;
+  min-width: 120px;
 `;
 
 // Initialize extension state from storage
@@ -150,6 +166,103 @@ async function createToggleButtons(): Promise<void> {
   );
 }
 
+// Add this function to create the copy button
+function createCopyButton(): void {
+  const button = document.createElement('button');
+  button.id = 'copyTextButton';
+  button.style.cssText = COPY_BUTTON_STYLE;
+  button.textContent = 'Copy Text';
+
+  button.addEventListener('click', () => {
+    try {
+      const mainText = document
+        .querySelector('iframe')
+        ?.contentWindow?.document.querySelector(
+          "#root > div > div > div[class*='main']",
+        )?.textContent;
+
+      if (mainText) {
+        navigator.clipboard
+          .writeText(mainText)
+          .then(() => {
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+              button.textContent = 'Copy Text';
+            }, 2000);
+          })
+          .catch((error) => {
+            button.textContent = 'Failed!';
+            setTimeout(() => {
+              button.textContent = 'Copy Text';
+            }, 2000);
+            logger.error(error);
+          });
+      } else {
+        button.textContent = 'No Text Found';
+        setTimeout(() => {
+          button.textContent = 'Copy Text';
+        }, 2000);
+      }
+    } catch (error) {
+      button.textContent = 'Error!';
+      setTimeout(() => {
+        button.textContent = 'Copy Text';
+      }, 2000);
+      logger.error(error);
+    }
+  });
+
+  document.body.appendChild(button);
+}
+
+// Add this function to create the ChatGPT button below the Copy button
+function createChatGPTButton(): void {
+  const button = document.createElement('button');
+  button.id = 'chatGPTButton';
+  const CHATGPT_BUTTON_STYLE = `
+    position: fixed;
+    z-index: 99999;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    right: 40px;
+    bottom: 130px;
+    min-width: 120px;
+  `;
+  button.style.cssText = CHATGPT_BUTTON_STYLE;
+  button.textContent = 'ChatGPT';
+
+  button.addEventListener('click', () => {
+    try {
+      const mainText = document
+        .querySelector('iframe')
+        ?.contentWindow?.document.querySelector(
+          "#root > div > div > div[class*='main']",
+        )?.textContent;
+      if (mainText) {
+        const url = `https://chatgpt.com/?q=${encodeURIComponent(mainText)}`;
+        window.open(url, '_blank');
+      } else {
+        button.textContent = 'No Text Found';
+        setTimeout(() => {
+          button.textContent = 'ChatGPT';
+        }, 2000);
+      }
+    } catch (error) {
+      button.textContent = 'Error!';
+      setTimeout(() => {
+        button.textContent = 'ChatGPT';
+      }, 2000);
+      logger.error(error);
+    }
+  });
+
+  document.body.appendChild(button);
+}
+
 function updateButton(id: string, text: string, value: boolean): void {
   const button = document.getElementById(id);
   if (button !== null) {
@@ -169,6 +282,8 @@ function updateButtons(): void {
 
 void updateIsEnabled();
 void createToggleButtons();
+void createChatGPTButton();
+void createCopyButton();
 
 browser.storage.onChanged.addListener((changes) => {
   if (changes.enabled !== undefined) {
