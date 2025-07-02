@@ -35,7 +35,7 @@ const config = {
     const manifest = JSON.parse(data);
     manifest.browser_specific_settings = {
       gecko: {
-        id: "minagishl@icloud.com",
+        id: "operationcheck@proton.me",
       },
     };
     manifest.background = {
