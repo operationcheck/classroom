@@ -26,9 +26,45 @@ browser.runtime.onInstalled.addListener(() => {
     });
 
     browser.contextMenus.create({
-      id: 'askChatGPT',
+      id: 'askAI',
       parentId: 'classroom',
-      title: 'Ask ChatGPT about exercise',
+      title: 'Ask AI',
+      contexts: ['all'],
+    });
+
+    // AI service submenu items
+    browser.contextMenus.create({
+      id: 'askChatGPT',
+      parentId: 'askAI',
+      title: 'ChatGPT',
+      contexts: ['all'],
+    });
+
+    browser.contextMenus.create({
+      id: 'askClaude',
+      parentId: 'askAI',
+      title: 'Claude',
+      contexts: ['all'],
+    });
+
+    browser.contextMenus.create({
+      id: 'askGenspark',
+      parentId: 'askAI',
+      title: 'Genspark',
+      contexts: ['all'],
+    });
+
+    browser.contextMenus.create({
+      id: 'askFelo',
+      parentId: 'askAI',
+      title: 'Felo',
+      contexts: ['all'],
+    });
+
+    browser.contextMenus.create({
+      id: 'askPerplexity',
+      parentId: 'askAI',
+      title: 'Perplexity',
       contexts: ['all'],
     });
 
@@ -72,6 +108,42 @@ browser.contextMenus.onClicked.addListener((info, tab) => {
           .sendMessage(tab.id, { action: 'askChatGPT' })
           .catch((error) => {
             logger.error(`Failed to send askChatGPT message: ${error}`);
+          });
+      }
+    } else if (info.menuItemId === 'askClaude') {
+      // Send message to content script to ask Claude about exercise
+      if (tab?.id) {
+        browser.tabs
+          .sendMessage(tab.id, { action: 'askClaude' })
+          .catch((error) => {
+            logger.error(`Failed to send askClaude message: ${error}`);
+          });
+      }
+    } else if (info.menuItemId === 'askGenspark') {
+      // Send message to content script to ask Genspark about exercise
+      if (tab?.id) {
+        browser.tabs
+          .sendMessage(tab.id, { action: 'askGenspark' })
+          .catch((error) => {
+            logger.error(`Failed to send askGenspark message: ${error}`);
+          });
+      }
+    } else if (info.menuItemId === 'askFelo') {
+      // Send message to content script to ask Felo about exercise
+      if (tab?.id) {
+        browser.tabs
+          .sendMessage(tab.id, { action: 'askFelo' })
+          .catch((error) => {
+            logger.error(`Failed to send askFelo message: ${error}`);
+          });
+      }
+    } else if (info.menuItemId === 'askPerplexity') {
+      // Send message to content script to ask Perplexity about exercise
+      if (tab?.id) {
+        browser.tabs
+          .sendMessage(tab.id, { action: 'askPerplexity' })
+          .catch((error) => {
+            logger.error(`Failed to send askPerplexity message: ${error}`);
           });
       }
     } else if (info.menuItemId === 'returnToChapter') {

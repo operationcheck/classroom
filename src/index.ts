@@ -4,7 +4,7 @@ import browser from 'webextension-polyfill';
 // Show in log when extension is loaded
 logger.info('Extension loaded.');
 logger.info(
-  'Please star the repository if you like!\nhttps://github.com/operationcheck/classroom',
+  'Please star the repository if you like!\nhttps://github.com/minagishl/classroom',
 );
 
 // Flags and constants
@@ -653,16 +653,19 @@ async function handleCopyExercise(): Promise<void> {
   }
 }
 
-// Function to handle ChatGPT question from context menu
-async function handleAskChatGPT(): Promise<void> {
+// Generic function to handle AI service questions
+async function handleAskAI(
+  serviceName: string,
+  baseUrl: string,
+): Promise<void> {
   const exerciseContent = getExerciseContent();
 
   if (exerciseContent === null) {
-    logger.error('No exercise elements found for ChatGPT');
+    logger.error(`No exercise elements found for ${serviceName}`);
     return;
   }
 
-  // Create the formatted question for ChatGPT
+  // Create the formatted question for AI services
   const answerFormat = `Please analyze this exercise and provide a detailed answer.
 
 Format your response as follows:
@@ -675,17 +678,38 @@ Format your response as follows:
 
   const fullQuestion = answerFormat + exerciseContent;
 
-  // URL encode the question for ChatGPT
+  // URL encode the question
   const encodedQuestion = encodeURIComponent(fullQuestion);
-  const chatGPTUrl = `https://chatgpt.com/?q=${encodedQuestion}`;
+  const serviceUrl = `${baseUrl}${encodedQuestion}`;
 
-  // Open ChatGPT in a new tab
+  // Open AI service in a new tab
   try {
-    window.open(chatGPTUrl, '_blank');
-    logger.info('Opened ChatGPT with exercise question');
+    window.open(serviceUrl, '_blank');
+    logger.info(`Opened ${serviceName} with exercise question`);
   } catch (error) {
-    logger.error(`Failed to open ChatGPT: ${error}`);
+    logger.error(`Failed to open ${serviceName}: ${error}`);
   }
+}
+
+// Individual AI service handlers
+async function handleAskChatGPT(): Promise<void> {
+  await handleAskAI('ChatGPT', 'https://chatgpt.com/?q=');
+}
+
+async function handleAskClaude(): Promise<void> {
+  await handleAskAI('Claude', 'https://claude.ai/new?q=');
+}
+
+async function handleAskGenspark(): Promise<void> {
+  await handleAskAI('Genspark', 'https://www.genspark.ai/search?query=');
+}
+
+async function handleAskFelo(): Promise<void> {
+  await handleAskAI('Felo', 'https://felo.ai/ja/search?q=');
+}
+
+async function handleAskPerplexity(): Promise<void> {
+  await handleAskAI('Perplexity', 'https://www.perplexity.ai/search?q=');
 }
 
 // Listen for messages from background script
@@ -697,6 +721,14 @@ browser.runtime.onMessage.addListener((message: unknown) => {
       void handleCopyExercise();
     } else if (action === 'askChatGPT') {
       void handleAskChatGPT();
+    } else if (action === 'askClaude') {
+      void handleAskClaude();
+    } else if (action === 'askGenspark') {
+      void handleAskGenspark();
+    } else if (action === 'askFelo') {
+      void handleAskFelo();
+    } else if (action === 'askPerplexity') {
+      void handleAskPerplexity();
     }
   }
 });
