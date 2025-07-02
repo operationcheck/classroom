@@ -19,6 +19,13 @@ browser.runtime.onInstalled.addListener(() => {
     });
 
     browser.contextMenus.create({
+      id: 'copyExercise',
+      parentId: 'classroom',
+      title: 'Copy exercise to clipboard',
+      contexts: ['all'],
+    });
+
+    browser.contextMenus.create({
       id: 'returnToChapter',
       parentId: 'classroom',
       title: 'Return to chapter on completion',
@@ -34,7 +41,7 @@ browser.runtime.onInstalled.addListener(() => {
   });
 });
 
-browser.contextMenus.onClicked.addListener((info) => {
+browser.contextMenus.onClicked.addListener((info, tab) => {
   try {
     if (info.menuItemId === 'toggle') {
       void browser.storage.local.get('enabled').then((data) => {
@@ -42,6 +49,15 @@ browser.contextMenus.onClicked.addListener((info) => {
         void browser.storage.local.set({ enabled });
         logger.info(`Extension is now ${enabled ? 'enabled' : 'disabled'}`);
       });
+    } else if (info.menuItemId === 'copyExercise') {
+      // Send message to content script to copy exercise
+      if (tab?.id) {
+        browser.tabs
+          .sendMessage(tab.id, { action: 'copyExercise' })
+          .catch((error) => {
+            logger.error(`Failed to send copyExercise message: ${error}`);
+          });
+      }
     } else if (info.menuItemId === 'returnToChapter') {
       void browser.storage.local.get('returnToChapter').then((data) => {
         const returnToChapter = data.returnToChapter !== true; // Toggle the return to chapter state
@@ -58,6 +74,6 @@ browser.contextMenus.onClicked.addListener((info) => {
       });
     }
   } catch (error) {
-    logger.error(error);
+    logger.error(`Context menu error: ${error}`);
   }
 });

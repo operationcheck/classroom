@@ -483,3 +483,184 @@ async function moveElement(number: number): Promise<void> {
     }
   });
 }
+
+// HTML to Markdown conversion function
+function htmlToMarkdown(html: string): string {
+  // Create a temporary div to parse HTML
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+
+  // Helper function to process nodes recursively
+  function processNode(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return node.textContent?.trim() || '';
+    }
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const element = node as Element;
+
+      // Skip elements with class="indicators"
+      if (element.classList.contains('indicators')) {
+        return '';
+      }
+
+      const tagName = element.tagName.toLowerCase();
+      const children = Array.from(node.childNodes).map(processNode).join('');
+
+      switch (tagName) {
+        case 'h1':
+          return `# ${children}\n\n`;
+        case 'h2':
+          return `## ${children}\n\n`;
+        case 'h3':
+          return `### ${children}\n\n`;
+        case 'h4':
+          return `#### ${children}\n\n`;
+        case 'h5':
+          return `##### ${children}\n\n`;
+        case 'h6':
+          return `###### ${children}\n\n`;
+        case 'p':
+          return `${children}\n\n`;
+        case 'br':
+          return '\n';
+        case 'strong':
+        case 'b':
+          return `**${children}**`;
+        case 'em':
+        case 'i':
+          return `*${children}*`;
+        case 'code':
+          return `\`${children}\``;
+        case 'pre':
+          return `\`\`\`\n${children}\n\`\`\`\n\n`;
+        case 'ul':
+          return `${children}\n`;
+        case 'ol':
+          return `${children}\n`;
+        case 'li':
+          return `- ${children}\n`;
+        case 'a': {
+          const href = element.getAttribute('href');
+          return href ? `[${children}](${href})` : children;
+        }
+        case 'img': {
+          const src = element.getAttribute('src');
+          const alt = element.getAttribute('alt') || '';
+          return src ? `![${alt}](${src})` : alt;
+        }
+        case 'blockquote':
+          return `> ${children}\n\n`;
+        case 'hr':
+          return '---\n\n';
+        case 'div':
+        case 'span':
+          return children;
+        default:
+          return children;
+      }
+    }
+
+    return '';
+  }
+
+  return processNode(tempDiv).trim();
+}
+
+// Function to find and extract exercise content from teaching materials iframe
+function getExerciseContent(): string | null {
+  try {
+    // First try to find exercises in the main document
+    let exerciseElements = document.querySelectorAll('.exercise');
+
+    // If not found, search within the teaching materials iframe
+    if (exerciseElements.length === 0) {
+      const iframeElement = document.querySelector<HTMLIFrameElement>(
+        'iframe[title="教材"]',
+      );
+      const iframeDocument =
+        iframeElement?.contentDocument ??
+        iframeElement?.contentWindow?.document;
+
+      if (iframeDocument) {
+        exerciseElements = iframeDocument.querySelectorAll('.exercise');
+      }
+    }
+
+    if (exerciseElements.length === 0) {
+      return null;
+    }
+
+    let markdownContent = '';
+    exerciseElements.forEach((element, index) => {
+      if (index > 0) {
+        markdownContent += '\n---\n\n';
+      }
+      markdownContent += `# Exercise ${index + 1}\n\n`;
+      markdownContent += htmlToMarkdown(element.innerHTML);
+    });
+
+    return markdownContent;
+  } catch (error) {
+    logger.error(`Failed to get exercise content: ${error}`);
+    return null;
+  }
+}
+
+// Function to copy text to clipboard
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+    // Fallback for older browsers
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const success = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return success;
+  } catch (error) {
+    logger.error(`Failed to copy to clipboard: ${error}`);
+    return false;
+  }
+}
+
+// Function to handle exercise copy from context menu
+async function handleCopyExercise(): Promise<void> {
+  const exerciseContent = getExerciseContent();
+
+  if (exerciseContent === null) {
+    window.alert('Error: No exercise content found with class="exercise"');
+    logger.error('No exercise elements found');
+    return;
+  }
+
+  const success = await copyToClipboard(exerciseContent);
+
+  if (success) {
+    window.alert('Exercise content copied to clipboard as Markdown!');
+    logger.info('Exercise content copied to clipboard');
+  } else {
+    window.alert('Failed to copy exercise content to clipboard');
+    logger.error('Failed to copy exercise content');
+  }
+}
+
+// Listen for messages from background script
+browser.runtime.onMessage.addListener((message: unknown) => {
+  if (
+    message &&
+    typeof message === 'object' &&
+    'action' in message &&
+    (message as { action: string }).action === 'copyExercise'
+  ) {
+    void handleCopyExercise();
+  }
+});
