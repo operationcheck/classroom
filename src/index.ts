@@ -653,14 +653,50 @@ async function handleCopyExercise(): Promise<void> {
   }
 }
 
+// Function to handle ChatGPT question from context menu
+async function handleAskChatGPT(): Promise<void> {
+  const exerciseContent = getExerciseContent();
+
+  if (exerciseContent === null) {
+    logger.error('No exercise elements found for ChatGPT');
+    return;
+  }
+
+  // Create the formatted question for ChatGPT
+  const answerFormat = `Please analyze this exercise and provide a detailed answer.
+
+Format your response as follows:
+1. **Problem Analysis**: Briefly explain what the question is asking
+2. **Solution**: Step-by-step solution or explanation
+3. **Answer**: Final answer or conclusion
+4. **Additional Notes**: Any relevant tips or concepts to remember
+
+`;
+
+  const fullQuestion = answerFormat + exerciseContent;
+
+  // URL encode the question for ChatGPT
+  const encodedQuestion = encodeURIComponent(fullQuestion);
+  const chatGPTUrl = `https://chatgpt.com/?q=${encodedQuestion}`;
+
+  // Open ChatGPT in a new tab
+  try {
+    window.open(chatGPTUrl, '_blank');
+    logger.info('Opened ChatGPT with exercise question');
+  } catch (error) {
+    logger.error(`Failed to open ChatGPT: ${error}`);
+  }
+}
+
 // Listen for messages from background script
 browser.runtime.onMessage.addListener((message: unknown) => {
-  if (
-    message &&
-    typeof message === 'object' &&
-    'action' in message &&
-    (message as { action: string }).action === 'copyExercise'
-  ) {
-    void handleCopyExercise();
+  if (message && typeof message === 'object' && 'action' in message) {
+    const action = (message as { action: string }).action;
+
+    if (action === 'copyExercise') {
+      void handleCopyExercise();
+    } else if (action === 'askChatGPT') {
+      void handleAskChatGPT();
+    }
   }
 });

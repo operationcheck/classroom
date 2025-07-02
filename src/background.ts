@@ -26,6 +26,13 @@ browser.runtime.onInstalled.addListener(() => {
     });
 
     browser.contextMenus.create({
+      id: 'askChatGPT',
+      parentId: 'classroom',
+      title: 'Ask ChatGPT about exercise',
+      contexts: ['all'],
+    });
+
+    browser.contextMenus.create({
       id: 'returnToChapter',
       parentId: 'classroom',
       title: 'Return to chapter on completion',
@@ -56,6 +63,15 @@ browser.contextMenus.onClicked.addListener((info, tab) => {
           .sendMessage(tab.id, { action: 'copyExercise' })
           .catch((error) => {
             logger.error(`Failed to send copyExercise message: ${error}`);
+          });
+      }
+    } else if (info.menuItemId === 'askChatGPT') {
+      // Send message to content script to ask ChatGPT about exercise
+      if (tab?.id) {
+        browser.tabs
+          .sendMessage(tab.id, { action: 'askChatGPT' })
+          .catch((error) => {
+            logger.error(`Failed to send askChatGPT message: ${error}`);
           });
       }
     } else if (info.menuItemId === 'returnToChapter') {
