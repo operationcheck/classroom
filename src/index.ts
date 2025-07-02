@@ -4,7 +4,7 @@ import browser from 'webextension-polyfill';
 // Show in log when extension is loaded
 logger.info('Extension loaded.');
 logger.info(
-  'Please star the repository if you like!\nhttps://github.com/minagishl/classroom',
+  'Please star the repository if you like!\nhttps://github.com/operationcheck/classroom',
 );
 
 // Flags and constants

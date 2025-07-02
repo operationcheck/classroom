@@ -15,14 +15,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/minagishl/classroom.git"
+    "url": "git+https://github.com/operationcheck/classroom.git"
   },
-  "author": "minagishl",
+  "author": "operationcheck",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/minagishl/classroom/issues"
+    "url": "https://github.com/operationcheck/classroom/issues"
   },
-  "homepage": "https://github.com/minagishl/classroom#readme",
+  "homepage": "https://github.com/operationcheck/classroom#readme",
   "description": "This extension automatically plays videos from school study sites",
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
