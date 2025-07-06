@@ -142,6 +142,13 @@ browser.runtime.onInstalled.addListener(() => {
       title: 'Hide UI buttons',
       contexts: ['all'],
     });
+
+    browser.contextMenus.create({
+      id: 'openRepository',
+      parentId: 'classroom',
+      title: 'Open repository',
+      contexts: ['all'],
+    });
   });
 });
 
@@ -220,6 +227,15 @@ browser.contextMenus.onClicked.addListener((info, tab) => {
         const hideUI = data.hideUI !== true; // Toggle the hideUI state
         void browser.storage.local.set({ hideUI });
         logger.info(`UI buttons are now ${hideUI ? 'hidden' : 'visible'}`);
+      });
+    } else if (info.menuItemId === 'openRepository') {
+      // Open the repository in a new tab
+      browser.tabs.create({
+        url: 'https://github.com/operationcheck/classroom'
+      }).then(() => {
+        logger.info('Repository opened in new tab');
+      }).catch((error) => {
+        logger.error(`Failed to open repository: ${error}`);
       });
     }
   } catch (error) {
