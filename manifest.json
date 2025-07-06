@@ -4,7 +4,7 @@
   "manifest_version": 3,
   "description": "This extension automatically plays videos from school study sites",
   "author": "operationcheck@proton.me",
-  "permissions": ["contextMenus", "storage"],
+  "permissions": ["contextMenus", "storage", "notifications"],
   "icons": {
     "16": "images/icon16.png",
     "19": "images/icon19.png",

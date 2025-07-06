@@ -22,6 +22,8 @@ let backgroundAutoPlay = false;
 let returnToChapter = true;
 let hideUI = false;
 let userInteracted = false;
+let lastCheckedUrl = '';
+let urlCheckIntervalId: number;
 
 const HIDDEN_BACKGROUND_BUTTON: boolean = false;
 const RGB_COLOR_GREEN = 'rgb(0, 197, 65)';
@@ -185,7 +187,13 @@ function updateButtons(): void {
 void (async () => {
   await updateIsEnabled();
   await createToggleButtons();
+  startUrlMonitoring();
 })().catch(logger.error);
+
+// Stop URL monitoring when page is unloaded
+window.addEventListener('beforeunload', () => {
+  stopUrlMonitoring();
+});
 
 browser.storage.onChanged.addListener((changes) => {
   if (changes.enabled !== undefined) {
@@ -264,6 +272,125 @@ function createPlayButton(video: HTMLMediaElement): void {
   });
 
   document.body.appendChild(button);
+}
+
+function checkForSpecialContent(): void {
+  const currentUrl = window.location.href.toLowerCase();
+
+  // Skip if URL hasn't changed since last check
+  if (currentUrl === lastCheckedUrl) {
+    return;
+  }
+
+  lastCheckedUrl = currentUrl;
+  logger.info(`Checking URL for special content: ${currentUrl}`);
+
+  const specialKeywords = ['evaluation_test', 'essay_test', 'evaluation_report', 'essay_report'];
+
+  const foundKeyword = specialKeywords.find(keyword => currentUrl.includes(keyword));
+
+  if (foundKeyword) {
+    const notificationMessages = {
+      evaluation_test: 'Evaluation test detected! Please complete the assessment.',
+      essay_test: 'Essay test detected! Please complete the written assignment.',
+      evaluation_report: 'Evaluation report detected! Please review the assessment results.',
+      essay_report: 'Essay report detected! Please review the essay feedback.'
+    };
+
+            const message = notificationMessages[foundKeyword as keyof typeof notificationMessages];
+
+    // Check if extension context is valid before sending message
+    if (!browser.runtime?.id) {
+      logger.error('Extension context is invalidated, using fallback alert');
+      window.alert(message);
+      return;
+    }
+
+    // Send message to background script to create notification
+    browser.runtime.sendMessage({
+      action: 'createNotification',
+      title: 'Classroom Extension',
+      notificationMessage: message
+    }).then((response) => {
+      if (response && typeof response === 'object' && 'success' in response && response.success) {
+        logger.info(`Notification sent for special content: ${foundKeyword}`);
+      } else {
+        const errorMsg = response && typeof response === 'object' && 'error' in response
+          ? response.error
+          : 'Unknown error';
+        logger.error(`Failed to create notification: ${errorMsg}`);
+        // Fallback to alert if notification fails
+        window.alert(message);
+      }
+    }).catch((error) => {
+      logger.error(`Failed to send notification message: ${error}`);
+
+      // Check if it's a context invalidation error
+      if (error.message && error.message.includes('Extension context invalidated')) {
+        logger.warn('Extension context invalidated, attempting to use native notification API');
+
+        // Try using native notification API as fallback
+        if ('Notification' in window) {
+          if (Notification.permission === 'granted') {
+            try {
+              new Notification('Classroom Extension', {
+                body: message,
+                icon: 'images/icon128.png'
+              });
+              logger.info(`Native notification sent for special content: ${foundKeyword}`);
+              return;
+            } catch (nativeError) {
+              logger.error(`Failed to create native notification: ${nativeError}`);
+            }
+          } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then((permission) => {
+              if (permission === 'granted') {
+                try {
+                  new Notification('Classroom Extension', {
+                    body: message,
+                    icon: 'images/icon128.png'
+                  });
+                  logger.info(`Native notification sent for special content: ${foundKeyword}`);
+                  return;
+                } catch (nativeError) {
+                  logger.error(`Failed to create native notification: ${nativeError}`);
+                }
+              }
+              // If native notification also fails, fallback to alert
+              window.alert(message);
+            }).catch(() => {
+              window.alert(message);
+            });
+            return;
+          }
+        }
+      }
+
+      // Final fallback to alert
+      window.alert(message);
+    });
+
+    logger.info(`Special content detected: ${foundKeyword}`);
+  }
+}
+
+function startUrlMonitoring(): void {
+  // Check immediately
+  checkForSpecialContent();
+
+  // Set up interval to check every 2 seconds
+  urlCheckIntervalId = window.setInterval(() => {
+    checkForSpecialContent();
+  }, 2000);
+
+  logger.info('URL monitoring started');
+}
+
+function stopUrlMonitoring(): void {
+  if (urlCheckIntervalId) {
+    clearInterval(urlCheckIntervalId);
+    logger.info('URL monitoring stopped');
+  }
 }
 
 function handleVideoEnd(): void {

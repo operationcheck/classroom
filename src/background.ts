@@ -1,6 +1,67 @@
 import logger from 'logger';
 import browser from 'webextension-polyfill';
 
+// Handle messages from content script
+browser.runtime.onMessage.addListener((message, _, sendResponse) => {
+  if (message && typeof message === 'object' && 'action' in message) {
+    if (message.action === 'createNotification' &&
+        'title' in message &&
+        'notificationMessage' in message) {
+      const title = typeof message.title === 'string' ? message.title : 'Classroom Extension';
+      const notificationMessage = typeof message.notificationMessage === 'string' ? message.notificationMessage : '';
+
+      // Check and request notification permission if needed
+      browser.permissions.contains({ permissions: ['notifications'] }).then((hasPermission) => {
+        if (!hasPermission) {
+          logger.warn('Notification permission not granted, requesting permission...');
+          browser.permissions.request({ permissions: ['notifications'] }).then((granted) => {
+            if (granted) {
+              createNotificationNow();
+            } else {
+              logger.error('Notification permission denied by user');
+              sendResponse({ success: false, error: 'Notification permission denied' });
+            }
+          }).catch((error) => {
+            logger.error(`Failed to request notification permission: ${error}`);
+            sendResponse({ success: false, error: error.message });
+          });
+        } else {
+          createNotificationNow();
+        }
+      }).catch((error) => {
+        logger.error(`Failed to check notification permission: ${error}`);
+        // Try to create notification anyway
+        createNotificationNow();
+      });
+
+      function createNotificationNow() {
+        const notificationId = `classroom-${Date.now()}`;
+        browser.notifications.create(notificationId, {
+          type: 'basic',
+          iconUrl: 'images/icon128.png',
+          title: title,
+          message: notificationMessage
+        }).then(() => {
+          logger.info(`Notification created with ID: ${notificationId}, message: ${notificationMessage}`);
+          sendResponse({ success: true, notificationId });
+        }).catch((error) => {
+          logger.error(`Failed to create notification: ${error}`);
+          sendResponse({ success: false, error: error.message });
+        });
+      }
+    } else {
+      // Send response immediately for unhandled messages
+      sendResponse({ success: false, error: 'Unknown action' });
+    }
+  } else {
+    // Send response immediately for invalid messages
+    sendResponse({ success: false, error: 'Invalid message format' });
+  }
+
+  // Always return true to indicate we will send a response
+  return true;
+});
+
 browser.runtime.onInstalled.addListener(() => {
   void browser.storage.local.get('enabled').then(() => {
     // Create the parent menu item
