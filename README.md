@@ -10,6 +10,9 @@ You can enable or disable this extension from the right-click menu.
 
 ## Notice
 
+This extension implements useful features that did not exist in the original extension.
+Please do not contact previous developers with inquiries about this extension, as they are not involved.
+
 <!-- This application supports full background playback by editing a flag in the internal code, but this may violate N Prep's terms of service, so please use at your own risk. -->
 
 In no event shall the author or copyright holder be liable for any claim, damages or other obligation, whether in contract, tort or otherwise, arising out of or in connection with the Software or the use or other processing of the Software.
