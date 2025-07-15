@@ -839,6 +839,40 @@ async function handleAskPerplexity(): Promise<void> {
   await handleAskAI('Perplexity', 'https://www.perplexity.ai/search?q=');
 }
 
+// Function to handle copying AI prompt to clipboard
+async function handleCopyAIPrompt(): Promise<void> {
+  const exerciseContent = getExerciseContent();
+
+  if (exerciseContent === null) {
+    window.alert('Error: No exercise content found with class="exercise"');
+    logger.error('No exercise elements found for copy AI prompt');
+    return;
+  }
+
+  // Create the same formatted question used for AI services
+  const answerFormat = `Please analyze this exercise and provide a detailed answer.
+
+Format your response as follows:
+1. **Problem Analysis**: Briefly explain what the question is asking
+2. **Solution**: Step-by-step solution or explanation
+3. **Answer**: Final answer or conclusion
+4. **Additional Notes**: Any relevant tips or concepts to remember
+
+`;
+
+  const fullPrompt = answerFormat + exerciseContent;
+
+  const success = await copyToClipboard(fullPrompt);
+
+  if (success) {
+    window.alert('AI prompt and exercise content copied to clipboard!');
+    logger.info('AI prompt copied to clipboard');
+  } else {
+    window.alert('Failed to copy AI prompt to clipboard');
+    logger.error('Failed to copy AI prompt');
+  }
+}
+
 // Listen for messages from background script
 browser.runtime.onMessage.addListener((message: unknown) => {
   if (message && typeof message === 'object' && 'action' in message) {
@@ -856,6 +890,8 @@ browser.runtime.onMessage.addListener((message: unknown) => {
       void handleAskFelo();
     } else if (action === 'askPerplexity') {
       void handleAskPerplexity();
+    } else if (action === 'copyAIPrompt') {
+      void handleCopyAIPrompt();
     }
   }
 });

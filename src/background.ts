@@ -130,6 +130,13 @@ browser.runtime.onInstalled.addListener(() => {
     });
 
     browser.contextMenus.create({
+      id: 'copyAIPrompt',
+      parentId: 'askAI',
+      title: 'Copy prompt to clipboard',
+      contexts: ['all'],
+    });
+
+    browser.contextMenus.create({
       id: 'returnToChapter',
       parentId: 'classroom',
       title: 'Return to chapter on completion',
@@ -212,6 +219,15 @@ browser.contextMenus.onClicked.addListener((info, tab) => {
           .sendMessage(tab.id, { action: 'askPerplexity' })
           .catch((error) => {
             logger.error(`Failed to send askPerplexity message: ${error}`);
+          });
+      }
+    } else if (info.menuItemId === 'copyAIPrompt') {
+      // Send message to content script to copy AI prompt
+      if (tab?.id) {
+        browser.tabs
+          .sendMessage(tab.id, { action: 'copyAIPrompt' })
+          .catch((error) => {
+            logger.error(`Failed to send copyAIPrompt message: ${error}`);
           });
       }
     } else if (info.menuItemId === 'returnToChapter') {
